@@ -36,23 +36,23 @@ void ofxNative::openUrl( string url_s ){
 
 
 void ofxNative::maximizeWindow( ofAppGLFWWindow & window ){
-	NSWindow * cocoaWindow = (NSWindow*)window.getCocoaWindow();
+	NSWindow * cocoaWindow = (__bridge NSWindow*)window.getCocoaWindow();
 	[cocoaWindow setFrame:[[NSScreen mainScreen] visibleFrame] display:YES];
 }
 
 
 void ofxNative::setMinimumWindowSize( ofAppGLFWWindow & window, int minWidth, int minHeight ){
-	NSWindow * cocoaWindow = (NSWindow*)window.getCocoaWindow();
+	NSWindow * cocoaWindow = (__bridge NSWindow*)window.getCocoaWindow();
 	[cocoaWindow setMinSize:NSMakeSize(minWidth,minHeight)];
 }
 
 void ofxNative::setWindowAlwaysOnTop(ofAppBaseWindow & window, bool onTop){
-		NSWindow * cocoaWindow = (NSWindow*)window.getCocoaWindow();
+		NSWindow * cocoaWindow = (__bridge NSWindow*)window.getCocoaWindow();
 		[cocoaWindow setLevel:onTop?(NSFloatingWindowLevel):(NSNormalWindowLevel)];
 }
 
 void ofxNative::setWindowRepresentedFilename(ofAppBaseWindow & window, const string & title, const string & filename ){
-	NSWindow * cocoaWindow = (NSWindow*)(window.getCocoaWindow());
+	NSWindow * cocoaWindow = (__bridge NSWindow*)(window.getCocoaWindow());
 	if(filename == ""){
 		[cocoaWindow setRepresentedFilename:@""];
 		[cocoaWindow setTitle:[NSString stringWithUTF8String:title.c_str()]];
@@ -136,6 +136,8 @@ ofFileDialogResult ofxNative::systemLoadDialog(std::string windowTitle, bool bFo
 	[loadDialog setCanChooseDirectories:bFolderSelection];
 	[loadDialog setCanChooseFiles:!bFolderSelection];
 	[loadDialog setResolvesAliases:YES];
+    [loadDialog setTitleVisibility:NSWindowTitleVisible];
+    
 	if(extensions.size()>0){
 		NSMutableArray * nsextensions = [[NSMutableArray alloc] init];
 		for(std::string ext : extensions){
@@ -144,9 +146,11 @@ ofFileDialogResult ofxNative::systemLoadDialog(std::string windowTitle, bool bFo
 		[loadDialog setAllowedFileTypes:nsextensions];
 	}
 	if(!windowTitle.empty()) {
-		[loadDialog setTitle:[NSString stringWithUTF8String:windowTitle.c_str()]];
-	}
+        [loadDialog setTitle:[NSString stringWithUTF8String:windowTitle.c_str()]];
+        [loadDialog setMessage:[NSString stringWithUTF8String:windowTitle.c_str()]];
 
+	}
+    
 	if(!defaultPath.empty()) {
 		NSString * s = [NSString stringWithUTF8String:defaultPath.c_str()];
 		s = [[s stringByExpandingTildeInPath] stringByResolvingSymlinksInPath];
@@ -159,7 +163,7 @@ ofFileDialogResult ofxNative::systemLoadDialog(std::string windowTitle, bool bFo
 
 	restoreAppWindowFocus();
 
-	if(buttonClicked == NSFileHandlingPanelOKButton) {
+    if(buttonClicked == NSModalResponseOK) {
 		NSURL * selectedFileURL = [[loadDialog URLs] objectAtIndex:0];
 		results.filePath = string([[selectedFileURL path] UTF8String]);
 	}
@@ -196,7 +200,7 @@ ofFileDialogResult ofxNative::systemSaveDialog(string defaultName, string messag
 	restoreAppWindowFocus();
 	[context makeCurrentContext];
 
-	if(buttonClicked == NSFileHandlingPanelOKButton){
+    if(buttonClicked == NSModalResponseOK){
 		results.filePath = string([[[saveDialog URL] path] UTF8String]);
 	}
 
@@ -212,7 +216,7 @@ ofFileDialogResult ofxNative::systemSaveDialog(string defaultName, string messag
 // originally from openFrameworks.
 // changed only to include file extensions
 static void restoreAppWindowFocus(){
-	NSWindow * appWindow = (NSWindow *)ofGetCocoaWindow();
+	NSWindow * appWindow = (__bridge NSWindow *)ofGetCocoaWindow();
 	if(appWindow) {
 		[appWindow makeKeyAndOrderFront:nil];
 	}
